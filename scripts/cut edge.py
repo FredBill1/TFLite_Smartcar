@@ -2,18 +2,18 @@ import os
 from os.path import join
 import cv2
 import numpy as np
+from for_each import for_each
 
-path = "dataset"
-border = np.array([4, 237, 253])
+DIR = "C:/Users/AORUS/dataset"
 
 
-def deal(img: np.ndarray):
+def deal(path):
+    img = cv2.imread(path)
     N, M = img.shape[:2]
-    return img[39 : N - 39, 39 : M - 39]
+    img = img[39 : N - 39, 39 : M - 39]
+    cv2.imwrite(path, img)
 
 
-for sub in os.listdir(path):
-    for file in os.listdir(join(path, sub)):
-        cur_dir = join(path, sub, file)
-        img: np.ndarray = cv2.imread(cur_dir, cv2.IMREAD_COLOR)
-        cv2.imwrite(cur_dir, deal(img))
+if __name__ == "__main__":
+    for_each(DIR, deal)
+

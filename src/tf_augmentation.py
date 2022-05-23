@@ -80,7 +80,9 @@ def random_blur_mask(image: tf.Tensor, new_seed):
 
 
 def random_brightness(image: tf.Tensor, new_seed):
-    delta = tf.random.stateless_uniform([], minval=BRIGHTNESS_DELTA[0], maxval=BRIGHTNESS_DELTA[1], dtype=tf.float32, seed=new_seed)
+    delta = tf.random.stateless_uniform(
+        [], minval=BRIGHTNESS_DELTA[0], maxval=BRIGHTNESS_DELTA[1], dtype=tf.float32, seed=new_seed
+    )
     return tf.image.adjust_brightness(image, delta)
 
 

@@ -6,7 +6,7 @@ from os.path import join, split, splitext
 from typing import Tuple
 
 
-def for_each(DIR: str, func: function, start: int = 0, batch_size: int = 2048) -> None:
+def for_each(DIR: str, func, start: int = 0, batch_size: int = 2048) -> None:
     glb = glob.glob(join(DIR, "*/*"))
     N = len(glb)
     M = os.cpu_count()
