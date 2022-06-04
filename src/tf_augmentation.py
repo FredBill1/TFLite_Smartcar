@@ -63,7 +63,7 @@ def random_mask(image: tf.Tensor, mask: tf.Tensor, new_seed, cnt: int = 1):
     return mask * blob + image * (1.0 - blob)
 
 
-BRIGHTNESS_DELTA = (-150, 50)
+BRIGHTNESS_DELTA = (-80, 80)
 CONTRAST_RANGE = (0.2, 1.7)
 SATURATION_RANGE = (0.2, 1.6)
 COLOR_SHIFT = 30.0
@@ -128,10 +128,11 @@ def random_rotate(image: tf.Tensor, new_seed):
     )
 
 
-def _augment(image_label, seed):
-    image, label = image_label
+_rng = tf.random.Generator.from_seed(514)
 
-    new_seed = tf.random.experimental.stateless_split(seed, num=24)
+
+def _augment(image, label):
+    new_seed = tf.transpose(_rng.make_seeds(24))
 
     image = random_color(image, new_seed[20, :])
     image = random_brightness(image, new_seed[21, :])
@@ -150,11 +151,8 @@ def _augment(image_label, seed):
     return image, label
 
 
-_counter = tf.data.experimental.Counter()
-
-
 def ds_augment(ds: tf.data.Dataset) -> tf.data.Dataset:
-    return tf.data.Dataset.zip((ds, (_counter, _counter))).map(_augment, num_parallel_calls=AUTOTUNE)
+    return ds.map(_augment, num_parallel_calls=AUTOTUNE)
 
 
 __all__ = ["ds_augment"]
