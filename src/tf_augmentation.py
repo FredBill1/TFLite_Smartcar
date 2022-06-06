@@ -3,8 +3,11 @@ import math
 import numpy as np
 from typing import List, Tuple
 
+# import tensorflow_addons as tfa
+
 AUTOTUNE = tf.data.AUTOTUNE
 
+PI_2 = np.pi * 2
 
 "https://medium.com/@fanzongshaoxing/adjust-local-brightness-for-image-augmentation-8111c001059b"
 
@@ -123,6 +126,11 @@ def random_color_mask(image: tf.Tensor, new_seed):
 
 
 def random_rotate(image: tf.Tensor, new_seed):
+    # return tfa.image.rotate(
+    #     image,
+    #     tf.random.stateless_uniform(shape=[], seed=new_seed, minval=0, maxval=PI_2, dtype=tf.float32),
+    #     fill_mode="reflect",
+    # )
     return tf.image.rot90(
         image, tf.random.stateless_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32, seed=new_seed)
     )
