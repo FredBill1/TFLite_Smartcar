@@ -42,21 +42,24 @@ def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
 
 
 def apply_blur(img, sigma):
-    blur = _gaussian_kernel(3, sigma, 3, img.dtype)
+    blur = _gaussian_kernel(5, sigma, 3, img.dtype)
     img = tf.nn.depthwise_conv2d(img[None], blur, [1, 1, 1, 1], "SAME")
     return img[0]
 
 
 def random_mask(image: tf.Tensor, mask: tf.Tensor, new_seed, cnt: int = 1):
     N, M, _ = image.shape
+    MIN = min(N, M)
+    MIN_R = MIN // 10
+    MAX_R = MIN // 2
     blob = tf.zeros((N, M))
     for I in range(cnt):
         i, j, r2 = (
             tf.random.stateless_uniform(
                 shape=[],
                 seed=new_seed[I * 3 + t, :],
-                minval=(0, 0, 30)[t],
-                maxval=(N, M, min(M, N) // (2 * cnt))[t],
+                minval=(0, 0, MIN_R)[t],
+                maxval=(N, M, MAX_R)[t],
                 dtype=image.dtype,
             )
             for t in range(3)
@@ -73,7 +76,7 @@ COLOR_SHIFT = 30.0
 
 
 def random_blur(image: tf.Tensor, new_seed):
-    sigma = tf.random.stateless_uniform(shape=[], seed=new_seed, minval=0.5, maxval=2, dtype=tf.float32)
+    sigma = tf.random.stateless_uniform(shape=[], seed=new_seed, minval=0.1, maxval=4, dtype=tf.float32)
     return apply_blur(image, sigma)
 
 
@@ -109,6 +112,16 @@ def random_saturation(image: tf.Tensor, new_seed):
     )
 
 
+def random_scaling_mask(image: tf.Tensor, new_seed):
+    H, W = image.shape[:2]
+    small = tf.image.resize(image, (H // 4, W // 4), tf.image.ResizeMethod.AREA)
+    near = tf.image.resize(small, (H, W), tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+    image = random_mask(image, near, new_seed[:3, :])
+    inter = tf.image.resize(small, (H, W), tf.image.ResizeMethod.BILINEAR, antialias=False)
+    image = random_mask(image, inter, new_seed[3:6, :])
+    return image
+
+
 def random_saturation_mask(image: tf.Tensor, new_seed):
     mask = random_saturation(image, new_seed[3, :])
     return random_mask(image, mask, new_seed[:3, :])
@@ -140,7 +153,7 @@ _rng = tf.random.Generator.from_seed(514)
 
 
 def _augment(image, label):
-    new_seed = tf.transpose(_rng.make_seeds(24))
+    new_seed = tf.transpose(_rng.make_seeds(35))
 
     image = random_color(image, new_seed[20, :])
     image = random_brightness(image, new_seed[21, :])
@@ -151,6 +164,10 @@ def _augment(image, label):
     image = random_contrast_mask(image, new_seed[8:12])
     image = random_saturation_mask(image, new_seed[12:16])
     image = random_blur_mask(image, new_seed[16:20])
+    image = random_blur_mask(image, new_seed[24:28])
+    image = random_blur(image, new_seed[28, :])
+    # image = random_blur_mask(image, new_seed[28:32])
+    image = random_scaling_mask(image, new_seed[29:35])
 
     image = tf.clip_by_value(image, 0, 255)
 
