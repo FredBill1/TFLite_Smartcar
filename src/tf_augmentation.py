@@ -42,7 +42,7 @@ def _gaussian_kernel(kernel_size, sigma, n_channels, dtype):
 
 
 def apply_blur(img, sigma):
-    blur = _gaussian_kernel(3, sigma, 3, img.dtype)
+    blur = _gaussian_kernel(7, sigma, 3, img.dtype)
     img = tf.nn.depthwise_conv2d(img[None], blur, [1, 1, 1, 1], "SAME")
     return img[0]
 
