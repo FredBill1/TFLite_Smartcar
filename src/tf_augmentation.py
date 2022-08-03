@@ -140,7 +140,7 @@ _rng = tf.random.Generator.from_seed(514)
 
 
 def _augment(image, label):
-    new_seed = tf.transpose(_rng.make_seeds(24))
+    new_seed = tf.transpose(_rng.make_seeds(23))
 
     image = random_color(image, new_seed[20, :])
     image = random_brightness(image, new_seed[21, :])
@@ -154,7 +154,7 @@ def _augment(image, label):
 
     image = tf.clip_by_value(image, 0, 255)
 
-    image = random_rotate(image, new_seed[23, :])
+    # image = random_rotate(image, new_seed[23, :])
 
     return image, label
 
@@ -163,4 +163,13 @@ def ds_augment(ds: tf.data.Dataset) -> tf.data.Dataset:
     return ds.map(_augment, num_parallel_calls=AUTOTUNE)
 
 
-__all__ = ["ds_augment"]
+def rotate_flip_shuffle(ds: tf.data.Dataset, length: int) -> tf.data.Dataset:
+    ds = ds.concatenate(ds.map(lambda img, label: (tf.image.rot90(img, 1), label), num_parallel_calls=AUTOTUNE))
+    ds = ds.concatenate(ds.map(lambda img, label: (tf.image.rot90(img, 2), label), num_parallel_calls=AUTOTUNE))
+    ds = ds.concatenate(ds.map(lambda img, label: (tf.image.flip_left_right(img), label), num_parallel_calls=AUTOTUNE))
+    ds = ds.shuffle(length * 8, reshuffle_each_iteration=True)
+
+    return ds
+
+
+__all__ = ["ds_augment", "rotate_flip_shuffle"]
