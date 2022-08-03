@@ -66,9 +66,9 @@ def random_mask(image: tf.Tensor, mask: tf.Tensor, new_seed, cnt: int = 1):
     return mask * blob + image * (1.0 - blob)
 
 
-BRIGHTNESS_DELTA = (-80, 80)
-CONTRAST_RANGE = (0.2, 1.7)
-SATURATION_RANGE = (0.2, 1.6)
+BRIGHTNESS_DELTA = (-60, 60)
+CONTRAST_RANGE = (0.4, 1.7)
+SATURATION_RANGE = (0.4, 1.6)
 COLOR_SHIFT = 30.0
 
 
@@ -136,11 +136,28 @@ def random_rotate(image: tf.Tensor, new_seed):
     )
 
 
+def random_scaling_mask(image: tf.Tensor, new_seed):
+    H, W = image.shape[:2]
+    small = tf.image.resize(image, (H // 2, W // 2), tf.image.ResizeMethod.AREA)
+    inter = tf.image.resize(small, (H, W), tf.image.ResizeMethod.BILINEAR, antialias=False)
+    image = random_mask(image, inter, new_seed)
+    return image
+
+
+def random_crop(image: tf.Tensor, new_seed):
+    H, W = image.shape[:2]
+    image = tf.image.central_crop(
+        image, tf.random.stateless_uniform([], minval=0.85, maxval=1, dtype=tf.float32, seed=new_seed)
+    )
+    image = tf.image.resize(image, (H, W), tf.image.ResizeMethod.BILINEAR, antialias=False)
+    return image
+
+
 _rng = tf.random.Generator.from_seed(514)
 
 
 def _augment(image, label):
-    new_seed = tf.transpose(_rng.make_seeds(23))
+    new_seed = tf.transpose(_rng.make_seeds(27))
 
     image = random_color(image, new_seed[20, :])
     image = random_brightness(image, new_seed[21, :])
@@ -152,8 +169,10 @@ def _augment(image, label):
     image = random_saturation_mask(image, new_seed[12:16])
     image = random_blur_mask(image, new_seed[16:20])
 
-    image = tf.clip_by_value(image, 0, 255)
+    image = random_crop(image, new_seed[26, :])
+    image = random_scaling_mask(image, new_seed[23:26])
 
+    image = tf.clip_by_value(image, 0, 255)
     # image = random_rotate(image, new_seed[23, :])
 
     return image, label
